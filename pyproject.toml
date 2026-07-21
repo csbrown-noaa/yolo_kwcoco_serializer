@@ -1,0 +1,29 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "yolo-kwcoco-serializer"
+version = "0.1.0"
+description = "A standalone serializer to convert Ultralytics YOLO Results objects into KWCOCO datasets."
+authors = [
+    { name = "CScott Brown" },
+]
+dependencies = [
+    "kwcoco>=0.3.3",
+    "numpy>=1.20.0"
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+# Ultralytics is optional to keep the base package extremely lightweight. 
+# Useful if this package is deployed on a pure data-orchestration server.
+ultralytics = [
+    "ultralytics>=8.0.0"
+]
+

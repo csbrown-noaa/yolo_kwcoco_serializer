@@ -150,8 +150,10 @@ class Yolo2KwcocoSerializer:
             if path != self.current_video_path:
                 self._register_new_video(path)
             
-            # Register a video frame (no file_name required by KWCOCO schema)
+            # Register a video frame with a generated name
+            video_name = os.path.basename(path)
             image_id = self.dset.add_image(
+                name=f"{video_name}_frame_{self.frame_counter:07d}",
                 video_id=self.current_video_id,
                 frame_index=self.frame_counter,
                 width=width,

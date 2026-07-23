@@ -16,7 +16,7 @@ class Yolo2KwcocoSerializer:
 
     This class handles the automatic routing of images versus video frames 
     based on file extensions, maps bounding boxes to the COCO standard, 
-    and optionally captures rich probability distributions if present.
+    captures tracker IDs, and optionally captures rich probability distributions.
 
     Parameters
     ----------
@@ -40,6 +40,7 @@ class Yolo2KwcocoSerializer:
     ...         self.xyxy = MockTensor([[10, 10, 30, 40]]) # x1, y1, x2, y2
     ...         self.conf = MockTensor([0.95])
     ...         self.cls = MockTensor([1])
+    ...         self.id = MockTensor([5]) # Adding mock track ID
     ...     def __len__(self): return 1
     >>> class MockResult:
     ...     path = "/fake/path/test_image.jpg"
@@ -55,6 +56,8 @@ class Yolo2KwcocoSerializer:
     1
     >>> ann['bbox']
     [10.0, 10.0, 20.0, 30.0]
+    >>> ann['track_id']
+    5
     >>> img = list(serializer.dset.imgs.values())[0]
     >>> img['file_name']
     'test_image.jpg'
@@ -175,13 +178,13 @@ class Yolo2KwcocoSerializer:
 
     def add_result(self, result):
         """
-        Consumes an Ultralytics Results object, extracts all spatial and 
-        semantic data, and appends it to the KWCOCO manifest.
+        Consumes an Ultralytics Results object, extracts all spatial, semantic, 
+        and tracking data, and appends it to the KWCOCO manifest.
 
         Parameters
         ----------
         result : ultralytics.engine.results.Results
-            The output object from model.predict().
+            The output object from model.predict() or model.track().
         """
         # 1. Register the image/frame
         image_id = self._process_image_level(result)
@@ -203,6 +206,11 @@ class Yolo2KwcocoSerializer:
         boxes_xyxy = result.boxes.xyxy.cpu().numpy()
         confs = result.boxes.conf.cpu().numpy()
         classes = result.boxes.cls.cpu().numpy().astype(int)
+        
+        # Extract Tracker IDs (if model.track() was used)
+        track_ids = None
+        if getattr(result.boxes, 'id', None) is not None:
+            track_ids = result.boxes.id.cpu().numpy().astype(int)
         
         # Check for custom probability arrays
         soft_scores = None
@@ -228,6 +236,10 @@ class Yolo2KwcocoSerializer:
                 'bbox': coco_bbox,
                 'score': score
             }
+            
+            # Inject tracker ID if present
+            if track_ids is not None:
+                ann_kwargs['track_id'] = int(track_ids[i])
             
             # Inject standard KWCOCO 'prob' field if we have soft scores
             if soft_scores is not None:

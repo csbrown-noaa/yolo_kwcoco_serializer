@@ -71,6 +71,9 @@ class Yolo2KwcocoSerializer:
         self.current_video_id = None
         self.frame_counter = 0
 
+        # State tracker for unique track IDs to prevent un-registered track warnings
+        self.registered_tracks = set()
+
         self._initialize_categories(categories)
 
     def _initialize_categories(self, categories: dict):
@@ -239,7 +242,14 @@ class Yolo2KwcocoSerializer:
             
             # Inject tracker ID if present
             if track_ids is not None:
-                ann_kwargs['track_id'] = int(track_ids[i])
+                track_id = int(track_ids[i])
+                
+                # Formally register the track ID with kwcoco to satisfy schema constraints
+                if track_id not in self.registered_tracks:
+                    self.dset.add_track(name=str(track_id), id=track_id)
+                    self.registered_tracks.add(track_id)
+                    
+                ann_kwargs['track_id'] = track_id
             
             # Inject standard KWCOCO 'prob' field if we have soft scores
             if soft_scores is not None:

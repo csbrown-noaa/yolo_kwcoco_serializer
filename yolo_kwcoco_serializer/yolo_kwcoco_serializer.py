@@ -253,7 +253,8 @@ class Yolo2KwcocoSerializer:
             
             # Inject standard KWCOCO 'prob' field if we have soft scores
             if soft_scores is not None:
-                ann_kwargs['prob'] = soft_scores[i].tolist()
+                if not np.isnan(soft_scores[i]).any():
+                    ann_kwargs['prob'] = soft_scores[i].tolist()
                 
             self.dset.add_annotation(**ann_kwargs)
 
